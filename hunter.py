@@ -55,6 +55,9 @@ class turbopower:
 
             except urllib2.URLError, e:
                 self._error=True
+
+            if 'as of' in _results:
+                print _results
         
             self.update_db()
 
