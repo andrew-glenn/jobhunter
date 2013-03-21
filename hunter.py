@@ -16,17 +16,27 @@ datestamp=datetime.now().strftime("%Y-%m-%d")
 # Start URL List
 # Connect to the database, create it if it doesn't exist. 
 class turbopower():
+    # define all the things!
+    dbcon=''
+    dbcur=''
+    _error=''
+    _area=''
+    _desc=''
+    _url=''
+    _md5hash=''
 
     def parse_db_query(_query):
-        return str(dbcon.execute(_query).fetchall()[0][0])
+        return str(self.dbcon.execute(_query).fetchall()[0][0])
 
     def init_db():
+        print "init db"
         self.dbcon = sqlite3.connect(config.dbpath)
         self.dbcur=dbcon.cursor()
         dbquery="create table if not exists districts (isd VARCHAR(255), area VARCHAR(255), url VARCHAR(255), md5 VARCHAR(32), last_updated VARCHAR(10), last_scanned VARCHAR(10), has_error VARCHAR(5), pubpri VARCHAR(255));"
-        dbcur.execute(dbquery)
+        self.dbcur.execute(dbquery)
 
-    def interate_url():
+    def iterate_url():
+        print "iterate url"
         # Loop through the URLs.
         for v in config.d:
             self._error=False
@@ -49,6 +59,7 @@ class turbopower():
                 self._error=True
 
     def update_db():
+        print "update db"
         _dbquery="select exists (select 1 from districts where isd='%s' limit 1);" %(self._desc)
         if '1' in parse_db_query(_dbquery):
             # Grab the MD5sum and compare.
@@ -68,9 +79,10 @@ class turbopower():
         self.dbcon.execute(_dbquery)
     
         # Save the results. 
-        dbcon.commit()
+        self.dbcon.commit()
     
     def send_email():
+        print "send email" 
         # Construct the email body.
         msgbody="School District Report for '%s'" %(datestamp)
         msgbody+="\n\n"
@@ -78,7 +90,7 @@ class turbopower():
         msgbody+="\n\n"
 
         # List each district, url that was updated since the last run.
-        for i in dbcon.execute("select isd, url from districts where last_updated='2013-03-20';").fetchall():
+        for i in self.dbcon.execute("select isd, url from districts where last_updated='2013-03-20';").fetchall():
             msgbody+="%s\n\t\t%s\n" %(i[0], i[1])
     
         msgbody+="\n\n"
@@ -86,7 +98,7 @@ class turbopower():
         msgbody+="\n\n"
 
         # List all URLs that encountered an error in the last day, so I can investigate them.
-        for i in dbcon.execute("select isd, url from districts where has_error='True';").fetchall():
+        for i in self.dbcon.execute("select isd, url from districts where has_error='True';").fetchall():
             msgbody+="%s\t\t%s" %(i[0]. i[1])
     
         # Send the emaimport smtplib
@@ -106,11 +118,11 @@ if __name__ == '__main__':
     nourl='no'
     nodb='no'
     noemail='no'
-    if not yes in nourl:
-        turbopower.iterate_url()
-    if not yes in nodb:
-        turbopower.initdb()
-        turbopower.updatedb()
-    if not yes in noemail:
-        turbopower.send_email()
+    if not 'yes' in nourl:
+        turbopower.iterate_url
+    if not 'yes' in nodb:
+        turbopower.init_db
+        turbopower.update_db
+    if not 'yes' in noemail:
+        turbopower.send_email
 
