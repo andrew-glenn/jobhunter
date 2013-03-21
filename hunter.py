@@ -6,7 +6,7 @@ import sqlite3
 import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
-from config.py import Config
+from config import Config
 
 config = Config()
 ## Sending email variables
@@ -65,7 +65,7 @@ class turbopower():
             _dbquery="insert into districts (isd, area, url, md5, last_updated, last_scanned, has_error) values ('%s', '%s', '%s', '%s','%s','%s', '%s')" %(self._desc, self._area, self._url, self._md5hash, datestamp, datestamp, self._error)
     
         # Execute the query
-       self.dbcon.execute(_dbquery)
+        self.dbcon.execute(_dbquery)
     
         # Save the results. 
         dbcon.commit()
@@ -101,12 +101,16 @@ class turbopower():
         mail.sendmail(config.fromaddy, config.toaddy, msg.as_string())
         mail.quit()
 
-if __name_ == '__main__':
-    if not nourl:
+if __name__ == '__main__':
+    turbopower = turbopower()
+    nourl='no'
+    nodb='no'
+    noemail='no'
+    if not yes in nourl:
         turbopower.iterate_url()
-    if not nodb:
+    if not yes in nodb:
         turbopower.initdb()
         turbopower.updatedb()
-    if not noemail:
+    if not yes in noemail:
         turbopower.send_email()
 
