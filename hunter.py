@@ -4,6 +4,7 @@ import hashlib
 import os
 import sqlite3
 import smtplib
+import re
 from datetime import datetime
 from email.mime.text import MIMEText
 from config import Config
@@ -26,7 +27,12 @@ class turbopower:
         self._desc=''
         self._url=''
         self._md5hash=''
-
+        self._regex=['<!---.*--->',
+                    'var beaconURL.*',
+                    'socs.fes.org.*',
+                    'counter.edlio.com.*',
+                    'id="hLoadTime" value="...."',
+                    '<input type="hidden".*']
     def parse_db_query(self, _query):
         return str(dbcon.execute(_query).fetchall()[0][0])
 
@@ -49,16 +55,20 @@ class turbopower:
                     _results=urllib2.urlopen(self._url, _postdata).read()
                 else:
                     _results=urllib2.urlopen(self._url).read()
-                    self._md5hash=hashlib.md5(_results).hexdigest()
             except urllib2.HTTPError, e:
                 self._error=True
 
             except urllib2.URLError, e:
                 self._error=True
 
-            if 'as of' in _results:
-                print _results
-        
+            if _results:
+                # Remove the stuff we don't care about. "Server Generation Time: X seconds", etc. 
+                # Once done, hash the remaining text. 
+                # Thinking there's a better way to do this, But for now...
+                for pattern in self._regex:
+                    _results = re.sub(pattern, '', _results)
+                self._md5hash=hashlib.md5(_results).hexdigest()
+
             self.update_db()
 
     def update_db(self):
