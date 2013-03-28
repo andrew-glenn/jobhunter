@@ -76,7 +76,7 @@ class turbopower:
                 for pattern in self._regex:
                     _results = re.sub(pattern, '', _results)
                 self._md5hash=hashlib.md5(_results).hexdigest()
-            #self.update_db()
+            self.update_db()
 
     def update_db(self):
         _dbquery="select exists (select 1 from districts where isd='%s' limit 1);" %(self._desc)
@@ -136,5 +136,5 @@ class turbopower:
 if __name__ == "__main__":
     turbopower = turbopower()
     turbopower.iterate_url()
-    #turbopower.init_db()
-    #turbopower.send_email()
+    turbopower.init_db()
+    turbopower.send_email()
