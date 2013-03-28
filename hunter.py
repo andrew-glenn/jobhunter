@@ -16,7 +16,9 @@ config = Config()
 datestamp=datetime.now().strftime("%Y-%m-%d")
 dbcon = sqlite3.connect(config.dbpath)
 dbcur = dbcon.cursor()
- 
+
+#f = open('hashresults','w')
+
 # Start URL List
 # Connect to the database, create it if it doesn't exist. 
 class turbopower:
@@ -27,12 +29,17 @@ class turbopower:
         self._desc=''
         self._url=''
         self._md5hash=''
-        self._regex=['<!---.*--->',
-                    'var beaconURL.*',
-                    'socs.fes.org.*',
-                    'counter.edlio.com.*',
-                    'id="hLoadTime" value="...."',
-                    '<input type="hidden".*']
+        self._regex=['.*<!--.*-->.*',
+                    '.*var beaconURL.*',
+                    '.*socs.fes.org.*',
+                    '.*counter.edlio.com.*',
+                    '.*id="hLoadTime" value="...."',
+                    '.*<input type=.hidden.*',
+                    '.*<p id="date".*',
+                    '.*sessionid.*',
+                    '.*loadstamp.*',
+                    '.*timeStamp.*']
+
     def parse_db_query(self, _query):
         return str(dbcon.execute(_query).fetchall()[0][0])
 
@@ -43,6 +50,7 @@ class turbopower:
     def iterate_url(self):
         # Loop through the URLs.
         for v in config.d:
+            f = open(v, 'w')
             self._error=False
             self._area=config.d[v]['Area']
             self._desc=config.d[v]['Desc']
@@ -68,8 +76,7 @@ class turbopower:
                 for pattern in self._regex:
                     _results = re.sub(pattern, '', _results)
                 self._md5hash=hashlib.md5(_results).hexdigest()
-
-            self.update_db()
+            #self.update_db()
 
     def update_db(self):
         _dbquery="select exists (select 1 from districts where isd='%s' limit 1);" %(self._desc)
@@ -129,5 +136,5 @@ class turbopower:
 if __name__ == "__main__":
     turbopower = turbopower()
     turbopower.iterate_url()
-    turbopower.init_db()
-    turbopower.send_email()
+    #turbopower.init_db()
+    #turbopower.send_email()
