@@ -5,6 +5,7 @@ import os
 import sqlite3
 import smtplib
 import re
+import shutil
 from datetime import datetime
 from email.mime.text import MIMEText
 from config import Config
@@ -39,6 +40,9 @@ class turbopower:
                     '.*sessionid.*',
                     '.*loadstamp.*',
                     '.*timeStamp.*']
+
+        _archive="{0}/{1}.{2}".format(config.archivedir, "jobs.db", datestamp)
+        shutil.copy(config.dbpath, _archive)
 
     def parse_db_query(self, _query):
         return str(dbcon.execute(_query).fetchall()[0][0])
