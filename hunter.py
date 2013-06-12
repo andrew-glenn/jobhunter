@@ -1,4 +1,46 @@
 #!/usr/bin/python
+# Job Hunter
+# A script to assist in parsing job postings. 
+#
+#   A note from the author.:
+#
+#   This script was to assist my girlfriend in finding a job.
+#   In the middle of an effort to make the results more granular, she got a job.
+#   To that end, I consider this script to be a GREAT SUCCESS!
+#   
+#   A few statistics: 
+#       Employers parsed during each run: 96
+#        Average run time: 45 seconds.
+#
+#   Parts of this script, like the TalentED and AppleJax classes are part of that granularity effort, 
+#    but are not yet called referenced during script execution.
+
+#   I'm leaving this script as-is. To see a non-cluttered version, take a look at the last git commit or two. 
+#   Should I need it later, it'll be here. 
+#
+### Begin Software License.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your option)
+# any later version.
+#
+# http://www.gnu.org/licenses/gpl-3.0.html
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# No Warranty or guarantee or suitability exists for the software.
+# Use at your own risk. The author is not responsible if your system breaks.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+### End Software License.
+#
+#
 import urllib2
 import hashlib
 import os
@@ -17,6 +59,19 @@ config = Config()
 datestamp=datetime.now().strftime("%Y-%m-%d")
 dbcon = sqlite3.connect(config.dbpath)
 dbcur = dbcon
+
+# class AppleJax(object):
+
+    # I know you're out there. I can feel you now. 
+    # I know that you're afraid... you're afraid of us. 
+    # You're afraid of change. I don't know the future. 
+    # I didn't come here to tell you how this is going to end. 
+    # I came here to tell you how it's going to begin. 
+    # I'm going to hang up this phone, and then I'm going to show these people what you don't want them to see. 
+    # I'm going to show them a world without you. 
+    # A world without rules and controls, without borders or boundaries. 
+    # A world where anything is possible. 
+    # Where we go from there is a choice I leave to you. 
 
 class TalentEDParse(HTMLParser.HTMLParser):
     def __init__(self):
