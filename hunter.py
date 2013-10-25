@@ -52,26 +52,20 @@ import HTMLParser
 from datetime import datetime
 from email.mime.text import MIMEText
 from config import Config
-
+from sqlalchemy import *
 config = Config()
 ## Sending email variables
 
 datestamp=datetime.now().strftime("%Y-%m-%d")
-dbcon = sqlite3.connect(config.dbpath)
-dbcur = dbcon
 
-# class AppleJax(object):
-
-    # I know you're out there. I can feel you now. 
-    # I know that you're afraid... you're afraid of us. 
-    # You're afraid of change. I don't know the future. 
-    # I didn't come here to tell you how this is going to end. 
-    # I came here to tell you how it's going to begin. 
-    # I'm going to hang up this phone, and then I'm going to show these people what you don't want them to see. 
-    # I'm going to show them a world without you. 
-    # A world without rules and controls, without borders or boundaries. 
-    # A world where anything is possible. 
-    # Where we go from there is a choice I leave to you. 
+# Create the pointer to the database engine, create the DB if it doesn't exist. 
+db = create_engine({0][1].format("sqlite://",config.dbpath))
+conn = db.connect()
+conn.execute("create table if not exists districts (isd VARCHAR(255), area VARCHAR(255), url VARCHAR(255), \
+                    md5 VARCHAR(32), last_updated VARCHAR(10), last_scanned VARCHAR(10), has_error VARCHAR(5), \ 
+                    pubpri VARCHAR(255), relevant INTEGER);")
+conn.close()
+metadata = BoundMetadata(db)
 
 class TalentEDParse(HTMLParser.HTMLParser):
     def __init__(self):
@@ -139,16 +133,10 @@ class turbopower:
         self._desc = None
         self._url = None
         self._md5hash = None
-        self._regex=['.*<!--.*-->.*',
-                    '.*var beaconURL.*',
-                    '.*socs.fes.org.*',
-                    '.*counter.edlio.com.*',
-                    '.*id="hLoadTime" value="...."',
-                    '.*<input type=.hidden.*',
-                    '.*<p id="date".*',
-                    '.*sessionid.*',
-                    '.*loadstamp.*',
-                    '.*timeStamp.*',
+        self._regex=['.*<!--.*-->.*', '.*var beaconURL.*', '.*socs.fes.org.*',
+                    '.*counter.edlio.com.*', '.*id="hLoadTime" value="...."',
+                    '.*<input type=.hidden.*', '.*<p id="date".*',
+                    '.*sessionid.*', '.*loadstamp.*', '.*timeStamp.*',
                     '.*beacon-1.newrelic.com.*']
 
         self._relevant = False
@@ -160,10 +148,6 @@ class turbopower:
 
     def parse_db_query(self, _query):
         return str(dbcon.execute(_query).fetchall()[0][0])
-
-    def init_db(self):
-        dbquery="create table if not exists districts (isd VARCHAR(255), area VARCHAR(255), url VARCHAR(255), md5 VARCHAR(32), last_updated VARCHAR(10), last_scanned VARCHAR(10), has_error VARCHAR(5), pubpri VARCHAR(255), relevant INTEGER);"
-        dbcur.execute(dbquery)
 
     def iterate_url(self):
         # Loop through the URLs.
@@ -207,30 +191,47 @@ class turbopower:
             self.update_db()
 
     def update_db(self):
-        if p.array():
-            p.array = p.candycrush(p.array())
+        dist = Table('districts', metadata, autoload=True)
+        s = select('*'].where(dist.c.isd=="%s") %(self._desc)
+        results = s.execute().fetchone()
+        try:
+            len(results)
+            # Unpacking the variables
+            district = str(results[0])
+            area = str(results[1])
+            url = str(results[2])
+            md5 = str(results[3])
+            last_updated = str(results[4])
+            last_scanned = str(results[5])
+            has_error = str(results[6])
+            pubpri = str(results[7])
+            relevant = str(results[8])
+            
+            # Let's set a the last_scanned variable to today
+            last_scanned = datestamp
 
-        _dbquery="select exists (select 1 from districts where isd='%s' limit 1);" %(self._desc)
-        if '1' in self.parse_db_query(_dbquery):
-            # Grab the MD5sum and compare.
-            _dbquery="select md5 from districts where isd='%s';" %(self._desc)
-            if self._md5hash in self.parse_db_query(_dbquery):
-                _dbquery="update districts set last_scanned='%s', has_error='%s' where isd='%s';" %(datestamp, self._error, self._desc)
-            else:
-                _dbquery="update districts set last_updated='%s', last_scanned='%s', md5='%s', has_error='%s', relevant='%s' where isd='%s';" %(datestamp, datestamp, self._md5hash, self._error, self._relevant, self._desc)
-            # If the request error'd  out.
-            if self._error == True:
-                _dbquery="update districts set last_updated='%s', has_error='%s' where isd='%s';" %(datestamp, self._error, self._desc)
-        # If it doesn't exist, insert it.
-        else:
-            _dbquery="insert into districts (isd, area, url, md5, last_updated, last_scanned, has_error, relevant) values ('%s', '%s', '%s', '%s','%s','%s', '%s','%s')" %(self._desc, self._area, self._url, self._md5hash, datestamp, datestamp, self._error, self._relevant)
-    
-        # Execute the query
-        dbcon.execute(_dbquery)
-    
-        # Save the results. 
-        dbcon.commit()
-    
+            # All the comparison logic
+            # - If the retreived MD5 matches the MD5 of the content we pulled.
+            if self._md5hash is not md5:
+                # Set the last_updated to today
+                # Store the retreived MD5
+                last_updated = datestamp
+                md5 = self._md5hash
+
+            # If something error'd out. 
+            if self._error:
+                has_error = True
+
+        # Results returned nothing            
+        except NameError:
+            # Insert the data into the database.
+            ins = dist.insert().values(isd=self._desc, area=self._area, \
+                                        url=self._url, md5=self._md5hash, \
+                                        last_updated=datestamp, last_scanned=datestamp, \
+                                        has_error=self._error, relevant=self._relevant)
+            result = db.execute(ins)
+
+   
     def send_email(self):
         # Construct the email body.
         msgbody="School District Report for '%s'" %(datestamp)
