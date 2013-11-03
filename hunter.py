@@ -60,11 +60,11 @@ datestamp=datetime.now().strftime("%Y-%m-%d")
 
 # Create the pointer to the database engine, create the DB if it doesn't exist. 
 db = create_engine({0][1].format("sqlite://",config.dbpath))
-conn = db.connect()
-conn.execute("create table if not exists districts (isd VARCHAR(255), area VARCHAR(255), url VARCHAR(255), \
-                    md5 VARCHAR(32), last_updated VARCHAR(10), last_scanned VARCHAR(10), has_error VARCHAR(5), \ 
-                    pubpri VARCHAR(255), relevant INTEGER);")
-conn.close()
+#conn = db.connect()
+#conn.execute("create table if not exists districts (isd VARCHAR(255), area VARCHAR(255), url VARCHAR(255), \
+#                    md5 VARCHAR(32), last_updated VARCHAR(10), last_scanned VARCHAR(10), has_error VARCHAR(5), \ 
+#                    pubpri VARCHAR(255), relevant INTEGER);")
+#conn.close()
 metadata = BoundMetadata(db)
 
 class TalentEDParse(HTMLParser.HTMLParser):
@@ -146,9 +146,6 @@ class turbopower:
         _archive="{0}/{1}.{2}".format(config.archivedir, "jobs.db", datestamp)
         shutil.copy(config.dbpath, _archive)
 
-    def parse_db_query(self, _query):
-        return str(dbcon.execute(_query).fetchall()[0][0])
-
     def iterate_url(self):
         # Loop through the URLs.
         for v in config.d:
@@ -183,10 +180,6 @@ class turbopower:
                         if "<table" in line:
                             p.feed(line)
 
-#                _rpattern = re.compile(self._pmatch, re.IGNORECASE)
-#                if _rpattern.search(_results):
-#                    self._relevant = True
-
                 self._md5hash=hashlib.md5(_results).hexdigest()
             self.update_db()
 
@@ -194,6 +187,7 @@ class turbopower:
         dist = Table('districts', metadata, autoload=True)
         s = select('*'].where(dist.c.isd=="%s") %(self._desc)
         results = s.execute().fetchone()
+
         try:
             len(results)
             # Unpacking the variables
@@ -221,6 +215,11 @@ class turbopower:
             # If something error'd out. 
             if self._error:
                 has_error = True
+            upd = dist.update().where(dist.c.isd=self._desc).values(isd=self._desc, area=self._area, \
+                            url=self._url, md5=self._md5hash, \
+                            last_updated=datestamp, last_scanned=datestamp, \
+                            has_error=self._error, relevant=self._relevant)
+            results = db.execute(upd)
 
         # Results returned nothing            
         except NameError:
@@ -232,48 +231,6 @@ class turbopower:
             result = db.execute(ins)
 
    
-    def send_email(self):
-        # Construct the email body.
-        msgbody="School District Report for '%s'" %(datestamp)
-        msgbody+="\n\n"
-        msgbody+="***Districts that have updated their postings since the last run:***"
-        msgbody+="\n\n"
-
-#        List each district, url that was updated since the last run, that are relevant.
-#        _query="select isd, url from districts where last_updated='%s' and relevant='True';" %(datestamp)
-        _query="select isd, url from districts where last_updated='%s';" %(datestamp)
-        for i in dbcon.execute(_query).fetchall():
-            msgbody+="%s\n\t\t%s\n" %(i[0], i[1])
-    
-        msgbody+="\n\n"
-        msgbody+="***URLs that Errored at last run.***"
-        msgbody+="\n\n"
-
-        # List all URLs that encountered an error in the last run, so I can investigate them.
-        _query="select isd, url from districts where has_error='True';"
-        for i in dbcon.execute(_query).fetchall():
-            msgbody+="%s\t\t%s\n\n" %(i[0], i[1])
-
-        msgbody+="\n\n"
-        msgbody+="***Districts that updated their postings, but no relevant positions were found.***"
-        msgbody+="\n\n"
-
-#        # All districts that updated their postings, but no relevant positions were found. 
-        _query="select isd, url from districts where last_updated='%s' and relevant='False';" %(datestamp)
-        for i in dbcon.execute(_query).fetchall():
-            msgbody+="%s\n\t\t%s\n" %(i[0], i[1])
-     
-        # Send the email. 
-        msg = MIMEText(msgbody)
-        msg['to'] = config.toaddy
-        msg['from'] = config.fromaddy
-        msg['Subject'] = config.subj
-
-        mail = smtplib.SMTP(config.server)
-        mail.login(config.user,config.password)
-        mail.helo(config.helostring)
-        mail.sendmail(config.fromaddy, config.toaddy, msg.as_string())
-        mail.quit()
 
 
 if __name__ == "__main__":
